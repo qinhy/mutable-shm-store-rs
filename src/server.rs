@@ -126,9 +126,9 @@ impl MStoreServer {
     }
 
     fn handle(&self, request: &Value) -> Result<(Value, Option<std::os::fd::OwnedFd>)> {
-        let object = request.as_object().ok_or_else(|| {
-            MStoreError::InvalidRequest("request must be a JSON object".into())
-        })?;
+        let object = request
+            .as_object()
+            .ok_or_else(|| MStoreError::InvalidRequest("request must be a JSON object".into()))?;
         let op = object.get("op").and_then(Value::as_str).unwrap_or("");
         let args = object.get("args").cloned().unwrap_or_else(|| json!({}));
         let args = args
@@ -140,12 +140,9 @@ impl MStoreServer {
         }
 
         if op == "create" {
-            let size = args
-                .get("size")
-                .and_then(Value::as_u64)
-                .ok_or_else(|| {
-                    MStoreError::InvalidRequest("size is required and must be an integer".into())
-                })?;
+            let size = args.get("size").and_then(Value::as_u64).ok_or_else(|| {
+                MStoreError::InvalidRequest("size is required and must be an integer".into())
+            })?;
             let shape = match args.get("shape") {
                 Some(Value::Array(values)) => Some(
                     values
@@ -168,10 +165,7 @@ impl MStoreServer {
                     ))
                 }
             };
-            let dtype = args
-                .get("dtype")
-                .and_then(Value::as_str)
-                .map(str::to_owned);
+            let dtype = args.get("dtype").and_then(Value::as_str).map(str::to_owned);
             let order = args
                 .get("order")
                 .and_then(Value::as_str)
@@ -200,15 +194,10 @@ impl MStoreServer {
             ));
         }
 
-        let object_id = args
-            .get("object_id")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+        let object_id = args.get("object_id").and_then(Value::as_str).unwrap_or("");
         let token = args.get("token").and_then(Value::as_str).unwrap_or("");
         if object_id.is_empty() {
-            return Err(MStoreError::InvalidRequest(
-                "object_id is required".into(),
-            ));
+            return Err(MStoreError::InvalidRequest("object_id is required".into()));
         }
 
         match op {
@@ -262,9 +251,9 @@ impl MStoreServer {
                     None => normalize_permission_alias("read")?,
                 };
                 let expires_in = args.get("expires_in").and_then(Value::as_f64);
-                let issued = self
-                    .registry
-                    .issue_token(object_id, token, permissions, expires_in)?;
+                let issued =
+                    self.registry
+                        .issue_token(object_id, token, permissions, expires_in)?;
                 Ok((json!({"token": issued}), None))
             }
             "revoke" => {

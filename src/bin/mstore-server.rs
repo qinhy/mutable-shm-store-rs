@@ -4,7 +4,11 @@ use clap::Parser;
 use mstore::{default_endpoint, MStoreServer};
 
 #[derive(Debug, Parser)]
-#[command(name = "mstore-server", version, about = "Mutable shared-memory object server")]
+#[command(
+    name = "mstore-server",
+    version,
+    about = "Mutable shared-memory object server"
+)]
 struct Args {
     /// unix:///path/to.sock. TCP is intentionally rejected on Unix because it cannot carry FDs.
     #[arg(long, default_value_t = default_endpoint())]

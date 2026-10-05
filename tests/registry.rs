@@ -18,7 +18,10 @@ fn permission_aliases_match_python_semantics() {
             .into_iter()
             .collect()
     );
-    assert_eq!(normalize_permission_alias("admin").unwrap(), Permission::all());
+    assert_eq!(
+        normalize_permission_alias("admin").unwrap(),
+        Permission::all()
+    );
     assert!(normalize_permissions(["admin"]).is_err());
 }
 
@@ -46,7 +49,6 @@ fn delegated_token_cannot_escalate() {
         .unwrap_err();
     assert!(matches!(err, MStoreError::PermissionDenied(_)));
 }
-
 
 #[test]
 fn revoke_and_expiry_block_future_validation() {

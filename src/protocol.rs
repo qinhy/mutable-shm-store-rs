@@ -3,9 +3,7 @@ use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::net::UnixStream;
 
 use nix::cmsg_space;
-use nix::sys::socket::{
-    recvmsg, sendmsg, ControlMessage, ControlMessageOwned, MsgFlags,
-};
+use nix::sys::socket::{recvmsg, sendmsg, ControlMessage, ControlMessageOwned, MsgFlags};
 use serde_json::Value;
 
 use crate::error::{MStoreError, Result};
@@ -81,14 +79,8 @@ pub fn send_unix(stream: &mut UnixStream, message: &Value, fd: Option<RawFd>) ->
         let iov = [IoSlice::new(&frame)];
         let fds = [fd];
         let cmsgs = [ControlMessage::ScmRights(&fds)];
-        let sent = sendmsg::<()>(
-            stream.as_raw_fd(),
-            &iov,
-            &cmsgs,
-            MsgFlags::empty(),
-            None,
-        )
-        .map_err(|e| std::io::Error::from_raw_os_error(e as i32))?;
+        let sent = sendmsg::<()>(stream.as_raw_fd(), &iov, &cmsgs, MsgFlags::empty(), None)
+            .map_err(|e| std::io::Error::from_raw_os_error(e as i32))?;
         if sent < frame.len() {
             stream.write_all(&frame[sent..])?;
         }

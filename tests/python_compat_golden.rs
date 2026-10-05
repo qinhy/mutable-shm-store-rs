@@ -13,15 +13,24 @@ fn decode_hex(s: &str) -> Vec<u8> {
 fn decodes_frames_generated_by_python_v03() {
     let frames = [
         (
-            include_str!("python_v03_golden.txt").lines().nth(0).unwrap(),
+            include_str!("python_v03_golden.txt")
+                .lines()
+                .next()
+                .unwrap(),
             json!({"op":"ping","args":{}}),
         ),
         (
-            include_str!("python_v03_golden.txt").lines().nth(1).unwrap(),
+            include_str!("python_v03_golden.txt")
+                .lines()
+                .nth(1)
+                .unwrap(),
             json!({"op":"open","args":{"object_id":"0123456789abcdef0123456789abcdef","token":"abc_DEF-123","mode":"read"}}),
         ),
         (
-            include_str!("python_v03_golden.txt").lines().nth(2).unwrap(),
+            include_str!("python_v03_golden.txt")
+                .lines()
+                .nth(2)
+                .unwrap(),
             json!({"ok":false,"error":{"type":"permission_denied","message":"token lacks permission(s): ['write']"}}),
         ),
     ];

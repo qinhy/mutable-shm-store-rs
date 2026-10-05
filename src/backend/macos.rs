@@ -17,10 +17,15 @@ pub struct MacOsSharedRegion {
 impl MacOsSharedRegion {
     pub fn create(size: u64, _object_id: &str) -> Result<Self> {
         if size == 0 || size > libc::off_t::MAX as u64 {
-            return Err(MStoreError::InvalidRequest("invalid shared-memory size".into()));
+            return Err(MStoreError::InvalidRequest(
+                "invalid shared-memory size".into(),
+            ));
         }
-        let name = CString::new(format!("/mstore-{}", Uuid::new_v4().simple()))
-            .expect("generated shm name contains no NUL");
+        // macOS limits POSIX shared-memory names to 31 bytes, including the
+        // leading slash. Keep 108 random bits after the short prefix.
+        let id = Uuid::new_v4().simple().to_string();
+        let name =
+            CString::new(format!("/ms-{}", &id[..27])).expect("generated shm name contains no NUL");
 
         // SAFETY: name is NUL terminated and flags/mode are valid for shm_open.
         let write_raw = unsafe {

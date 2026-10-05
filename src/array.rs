@@ -69,7 +69,11 @@ fn validate_dtype<T: ShmElement>(dtype: &str) -> Result<()> {
     }
 
     if itemsize > 1 {
-        let native = if cfg!(target_endian = "little") { '<' } else { '>' };
+        let native = if cfg!(target_endian = "little") {
+            '<'
+        } else {
+            '>'
+        };
         if !matches!(endian, '=' | '|') && endian != native {
             return Err(MStoreError::Array(format!(
                 "non-native-endian dtype {dtype:?} requires explicit conversion"
@@ -115,13 +119,14 @@ impl SharedObject {
         unsafe {
             self.with_bytes(|bytes| -> Result<R> {
                 if bytes.as_ptr().align_offset(align_of::<T>()) != 0 {
-                    return Err(MStoreError::Array("mapping is not correctly aligned".into()));
+                    return Err(MStoreError::Array(
+                        "mapping is not correctly aligned".into(),
+                    ));
                 }
                 // SAFETY: ShmElement is restricted to POD primitives; alignment,
                 // byte length and dtype were checked above, and the view cannot escape.
-                let elements = unsafe {
-                    slice::from_raw_parts(bytes.as_ptr().cast::<T>(), bytes.len() / size_of::<T>())
-                };
+                let elements =
+                    slice::from_raw_parts(bytes.as_ptr().cast::<T>(), bytes.len() / size_of::<T>());
                 let builder = IxDyn(&shape).set_f(is_fortran);
                 let view = ArrayViewD::from_shape(builder, elements)
                     .map_err(|e| MStoreError::Array(format!("invalid array shape: {e}")))?;
@@ -165,16 +170,16 @@ impl SharedObject {
         let nested = unsafe {
             self.with_bytes_mut(|bytes| -> Result<R> {
                 if bytes.as_ptr().align_offset(align_of::<T>()) != 0 {
-                    return Err(MStoreError::Array("mapping is not correctly aligned".into()));
+                    return Err(MStoreError::Array(
+                        "mapping is not correctly aligned".into(),
+                    ));
                 }
                 // SAFETY: see with_array; the MappingState mutex also serializes
                 // mutable access through this process-local cached mapping.
-                let elements = unsafe {
-                    slice::from_raw_parts_mut(
-                        bytes.as_mut_ptr().cast::<T>(),
-                        bytes.len() / size_of::<T>(),
-                    )
-                };
+                let elements = slice::from_raw_parts_mut(
+                    bytes.as_mut_ptr().cast::<T>(),
+                    bytes.len() / size_of::<T>(),
+                );
                 let builder = IxDyn(&shape).set_f(is_fortran);
                 let view = ArrayViewMutD::from_shape(builder, elements)
                     .map_err(|e| MStoreError::Array(format!("invalid array shape: {e}")))?;

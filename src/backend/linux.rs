@@ -15,7 +15,9 @@ pub struct LinuxMemfdRegion {
 impl LinuxMemfdRegion {
     pub fn create(size: u64, object_id: &str) -> Result<Self> {
         if size == 0 || size > libc::off_t::MAX as u64 {
-            return Err(MStoreError::InvalidRequest("invalid shared-memory size".into()));
+            return Err(MStoreError::InvalidRequest(
+                "invalid shared-memory size".into(),
+            ));
         }
         let name = CString::new(format!("mstore-{object_id}"))
             .map_err(|_| MStoreError::InvalidRequest("object id contains NUL".into()))?;

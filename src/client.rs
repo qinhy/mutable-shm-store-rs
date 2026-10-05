@@ -309,9 +309,9 @@ impl Client {
                 )));
             }
         };
-        let response = response.as_object().ok_or_else(|| {
-            MStoreError::Protocol("server response must be a JSON object".into())
-        })?;
+        let response = response
+            .as_object()
+            .ok_or_else(|| MStoreError::Protocol("server response must be a JSON object".into()))?;
         if response.get("ok").and_then(Value::as_bool) != Some(true) {
             drop(fd);
             let error = response.get("error").and_then(Value::as_object);
@@ -408,18 +408,14 @@ impl Client {
             .and_then(Value::as_str)
             .ok_or_else(|| MStoreError::Protocol("create response is missing token".into()))?
             .to_owned();
-        let info: ObjectInfo = serde_json::from_value(
-            result
-                .get("object")
-                .cloned()
-                .ok_or_else(|| MStoreError::Protocol("create response is missing object".into()))?,
-        )?;
-        let mapping: MappingInfo = serde_json::from_value(
-            result
-                .get("mapping")
-                .cloned()
-                .ok_or_else(|| MStoreError::Protocol("create response is missing mapping".into()))?,
-        )?;
+        let info: ObjectInfo =
+            serde_json::from_value(result.get("object").cloned().ok_or_else(|| {
+                MStoreError::Protocol("create response is missing object".into())
+            })?)?;
+        let mapping: MappingInfo =
+            serde_json::from_value(result.get("mapping").cloned().ok_or_else(|| {
+                MStoreError::Protocol("create response is missing mapping".into())
+            })?)?;
         let state = Arc::new(MappingState {
             mapping: Self::open_mapping(&mapping, fd, AccessMode::Write)?,
             info: info.clone(),
@@ -479,12 +475,10 @@ impl Client {
                 .cloned()
                 .ok_or_else(|| MStoreError::Protocol("open response is missing object".into()))?,
         )?;
-        let mapping: MappingInfo = serde_json::from_value(
-            result
-                .get("mapping")
-                .cloned()
-                .ok_or_else(|| MStoreError::Protocol("open response is missing mapping".into()))?,
-        )?;
+        let mapping: MappingInfo =
+            serde_json::from_value(result.get("mapping").cloned().ok_or_else(|| {
+                MStoreError::Protocol("open response is missing mapping".into())
+            })?)?;
         let state = Arc::new(MappingState {
             mapping: Self::open_mapping(&mapping, fd, mode)?,
             info: info.clone(),
@@ -626,7 +620,8 @@ impl Client {
         if let Some(cache) = &mut inner.cache {
             let keys: Vec<_> = cache
                 .iter()
-                .filter_map(|(key, _)| (key.object_id == object_id).then(|| key.clone()))
+                .filter(|&(key, _)| key.object_id == object_id)
+                .map(|(key, _)| key.clone())
                 .collect();
             for key in keys {
                 cache.pop(&key);
@@ -648,7 +643,8 @@ impl Client {
         let object_id = object_id.unwrap();
         let keys: Vec<_> = cache
             .iter()
-            .filter_map(|(key, _)| (key.object_id == object_id).then(|| key.clone()))
+            .filter(|&(key, _)| key.object_id == object_id)
+            .map(|(key, _)| key.clone())
             .collect();
         let count = keys.len();
         for key in keys {
@@ -695,12 +691,13 @@ impl Client {
                 "shape dimensions must be positive".into(),
             ));
         }
-        let count = shape.iter().try_fold(1usize, |acc, &x| acc.checked_mul(x)).ok_or_else(|| {
-            MStoreError::InvalidRequest("array element count overflow".into())
-        })?;
-        let size = count.checked_mul(std::mem::size_of::<T>()).ok_or_else(|| {
-            MStoreError::InvalidRequest("array byte size overflow".into())
-        })?;
+        let count = shape
+            .iter()
+            .try_fold(1usize, |acc, &x| acc.checked_mul(x))
+            .ok_or_else(|| MStoreError::InvalidRequest("array element count overflow".into()))?;
+        let size = count
+            .checked_mul(std::mem::size_of::<T>())
+            .ok_or_else(|| MStoreError::InvalidRequest("array byte size overflow".into()))?;
         self.create(
             size as u64,
             Some(shape.to_vec()),

@@ -58,9 +58,15 @@ impl Permission {
     }
 
     pub fn all() -> BTreeSet<Self> {
-        [Self::Read, Self::Write, Self::Grant, Self::Delete, Self::Info]
-            .into_iter()
-            .collect()
+        [
+            Self::Read,
+            Self::Write,
+            Self::Grant,
+            Self::Delete,
+            Self::Info,
+        ]
+        .into_iter()
+        .collect()
     }
 }
 

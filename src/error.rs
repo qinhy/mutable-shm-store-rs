@@ -40,9 +40,11 @@ impl MStoreError {
             Self::TokenRevoked(_) => "token_revoked",
             Self::InvalidRequest(_) => "invalid_request",
             Self::Protocol(_) => "protocol_error",
-            Self::Internal(_) | Self::Unsupported(_) | Self::Array(_) | Self::Io(_) | Self::Json(_) => {
-                "internal_error"
-            }
+            Self::Internal(_)
+            | Self::Unsupported(_)
+            | Self::Array(_)
+            | Self::Io(_)
+            | Self::Json(_) => "internal_error",
         }
     }
 

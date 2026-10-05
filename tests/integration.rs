@@ -1,4 +1,4 @@
-#![cfg(all(target_os = "linux", feature = "ndarray"))]
+#![cfg(all(any(target_os = "linux", target_os = "macos"), feature = "ndarray"))]
 
 use std::sync::Arc;
 use std::thread;
@@ -9,7 +9,10 @@ use serde_json::Map;
 use uuid::Uuid;
 
 fn start_server() -> (Arc<MStoreServer>, thread::JoinHandle<()>, String) {
-    let endpoint = format!("unix:///tmp/mstore-rs-test-{}.sock", Uuid::new_v4().simple());
+    let endpoint = format!(
+        "unix:///tmp/mstore-rs-test-{}.sock",
+        Uuid::new_v4().simple()
+    );
     let server = Arc::new(MStoreServer::new(Some(endpoint.clone()), true).unwrap());
     let cloned = Arc::clone(&server);
     let handle = thread::spawn(move || cloned.serve_forever().unwrap());
@@ -26,6 +29,7 @@ fn start_server() -> (Arc<MStoreServer>, thread::JoinHandle<()>, String) {
 fn zero_copy_lifecycle_capabilities_and_cache() {
     let (server, handle, endpoint) = start_server();
     let client = Client::new(Some(endpoint), Duration::from_secs(2), 8);
+    assert_eq!(client.ping().unwrap()["pong"].as_bool(), Some(true));
 
     let object = client
         .create_array::<u8>(&[8, 8, 3], "C", Map::new())
@@ -36,8 +40,7 @@ fn zero_copy_lifecycle_capabilities_and_cache() {
     let reader = client
         .open(object.object_id(), &read_token, AccessMode::Read, true)
         .unwrap();
-    unsafe { reader.with_array::<u8, _>(|image| assert!(image.iter().all(|&x| x == 7))) }
-        .unwrap();
+    unsafe { reader.with_array::<u8, _>(|image| assert!(image.iter().all(|&x| x == 7))) }.unwrap();
     assert!(unsafe { reader.with_bytes_mut(|_| ()) }.is_err());
 
     let reader2 = client
@@ -51,13 +54,11 @@ fn zero_copy_lifecycle_capabilities_and_cache() {
         .open(object.object_id(), &read_token, AccessMode::Read, true)
         .unwrap();
     assert!(cached_after_revoke.cache_hit());
-    let fresh_after_revoke = client.open(
-        object.object_id(),
-        &read_token,
-        AccessMode::Read,
-        false,
-    );
-    assert!(matches!(fresh_after_revoke, Err(MStoreError::TokenRevoked(_))));
+    let fresh_after_revoke = client.open(object.object_id(), &read_token, AccessMode::Read, false);
+    assert!(matches!(
+        fresh_after_revoke,
+        Err(MStoreError::TokenRevoked(_))
+    ));
 
     object.delete().unwrap();
     unsafe { reader.with_bytes(|bytes| assert_eq!(bytes[0], 7)) };
@@ -66,6 +67,11 @@ fn zero_copy_lifecycle_capabilities_and_cache() {
         Err(err) => err,
     };
     assert!(matches!(err, MStoreError::ObjectNotFound(_)));
+
+    let raw = client.create(16, None, None, "C", Map::new()).unwrap();
+    unsafe { raw.with_bytes_mut(|bytes| bytes[..4].copy_from_slice(b"MSTR")) }.unwrap();
+    unsafe { raw.with_bytes(|bytes| assert_eq!(&bytes[..4], b"MSTR")) };
+    raw.delete().unwrap();
 
     client.close();
     server.shutdown();

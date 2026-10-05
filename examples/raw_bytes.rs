@@ -10,6 +10,9 @@ fn main() -> Result<()> {
     let read_token = object.issue("read", None)?;
     let reader = store.open(object.object_id(), &read_token, AccessMode::Read, true)?;
     unsafe { reader.with_bytes(|bytes| assert_eq!(&bytes[..4], b"MSTR")) };
-    println!("{} is shared without payload IPC copies", reader.object_id());
+    println!(
+        "{} is shared without payload IPC copies",
+        reader.object_id()
+    );
     Ok(())
 }

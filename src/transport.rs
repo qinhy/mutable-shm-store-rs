@@ -114,7 +114,10 @@ impl Listener {
                 let listener = UnixListener::bind(&path)?;
                 std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))?;
                 listener.set_nonblocking(true)?;
-                Ok((Self::Unix(listener, path.clone()), format!("unix://{}", path.display())))
+                Ok((
+                    Self::Unix(listener, path.clone()),
+                    format!("unix://{}", path.display()),
+                ))
             }
             Endpoint::Tcp(addr) => {
                 let listener = TcpListener::bind(addr)?;
@@ -129,10 +132,12 @@ impl Listener {
         match self {
             Self::Unix(listener, _) => {
                 let (stream, _) = listener.accept()?;
+                stream.set_nonblocking(false)?;
                 Ok(ControlConnection::Unix(stream))
             }
             Self::Tcp(listener) => {
                 let (stream, _) = listener.accept()?;
+                stream.set_nonblocking(false)?;
                 stream.set_nodelay(true)?;
                 Ok(ControlConnection::Tcp(stream))
             }

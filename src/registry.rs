@@ -75,9 +75,8 @@ where
     let mut result = BTreeSet::new();
     for value in values {
         let value = value.as_ref();
-        let permission = Permission::parse(value).ok_or_else(|| {
-            MStoreError::InvalidRequest(format!("unknown permission: {value:?}"))
-        })?;
+        let permission = Permission::parse(value)
+            .ok_or_else(|| MStoreError::InvalidRequest(format!("unknown permission: {value:?}")))?;
         result.insert(permission);
     }
     if result.contains(&Permission::Write) {
@@ -168,9 +167,10 @@ impl Registry {
         let object = inner.objects.get(object_id).ok_or_else(|| {
             MStoreError::ObjectNotFound(format!("object {object_id:?} does not exist"))
         })?;
-        let token = inner.tokens.get(&hash_token(raw_token)).ok_or_else(|| {
-            MStoreError::Authentication("invalid token".into())
-        })?;
+        let token = inner
+            .tokens
+            .get(&hash_token(raw_token))
+            .ok_or_else(|| MStoreError::Authentication("invalid token".into()))?;
         if token.object_id != object_id {
             return Err(MStoreError::Authentication("invalid token".into()));
         }
@@ -225,9 +225,7 @@ impl Registry {
         }
         let expires_at = match expires_in {
             Some(seconds) if seconds <= 0.0 => {
-                return Err(MStoreError::InvalidRequest(
-                    "expires_in must be > 0".into(),
-                ))
+                return Err(MStoreError::InvalidRequest("expires_in must be > 0".into()))
             }
             Some(seconds) => {
                 let requested = now_seconds() + seconds;
@@ -247,9 +245,10 @@ impl Registry {
         let mut inner = self.inner.lock().expect("registry mutex poisoned");
         let _ = Self::validate_locked(&inner, object_id, issuer_raw, Permission::Grant)?;
         let target_hash = hash_token(target_raw);
-        let target = inner.tokens.get_mut(&target_hash).ok_or_else(|| {
-            MStoreError::Authentication("target token is invalid".into())
-        })?;
+        let target = inner
+            .tokens
+            .get_mut(&target_hash)
+            .ok_or_else(|| MStoreError::Authentication("target token is invalid".into()))?;
         if target.object_id != object_id {
             return Err(MStoreError::Authentication(
                 "target token is invalid".into(),
