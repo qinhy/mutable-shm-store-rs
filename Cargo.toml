@@ -1,0 +1,45 @@
+[package]
+name = "mstore"
+version = "0.1.0"
+edition = "2021"
+description = "Mutable zero-copy shared-memory object store for large local arrays and byte buffers"
+license = "MIT"
+readme = "README.md"
+keywords = ["shared-memory", "zero-copy", "ndarray", "ipc", "jetson"]
+categories = ["memory-management", "concurrency"]
+
+[lib]
+name = "mstore"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mstore-server"
+path = "src/bin/mstore-server.rs"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+required-features = ["ndarray"]
+
+[features]
+default = ["ndarray"]
+ndarray = ["dep:ndarray"]
+
+[dependencies]
+base64 = "0.22"
+clap = { version = "4.5", features = ["derive"] }
+getrandom = "0.3"
+libc = "0.2"
+lru = "0.16"
+ndarray = { version = "0.17.2", optional = true }
+nix = { version = "0.31.3", features = ["socket", "uio"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
